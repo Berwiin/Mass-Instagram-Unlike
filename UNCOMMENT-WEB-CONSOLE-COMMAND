@@ -1,0 +1,99 @@
+window.stopDelete = false;
+
+(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let totalCount = 0;
+  let round = 0;
+
+  const realClick = (el) => {
+    const rect = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2 }));
+    el.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2 }));
+    el.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2 }));
+  };
+
+  const findAny = (text) =>
+    [...document.querySelectorAll('button, div[role="button"], span[data-bloks-name]')]
+      .find(el => el.innerText?.trim() === text && el.offsetParent !== null);
+
+  const findButton = (text) =>
+    [...document.querySelectorAll('button')]
+      .find(el => el.innerText?.trim() === text && el.offsetParent !== null);
+
+  const findSpan = (text) =>
+    [...document.querySelectorAll('span[data-bloks-name="bk.components.TextSpan"]')]
+      .find(el => el.innerText?.trim() === text && el.offsetParent !== null);
+
+  const countdown = async (seconds) => {
+    for (let i = seconds; i > 0; i--) {
+      if (window.stopDelete) break;
+      if (i % 5 === 0 || i <= 3) console.log(`⏳ Další kolo za ${i}s...`);
+      await sleep(1000);
+    }
+  };
+
+  while (!window.stopDelete) {
+    round++;
+    console.log(`\n🔄 Kolo #${round} | Celkem smazáno: ${totalCount}`);
+
+    // 1. Klikni na "Vybrat"
+    const vybrátBtn = findAny('Vybrat');
+    if (!vybrátBtn) {
+      console.log('🎉 Vše hotovo! Celkem smazáno:', totalCount);
+      break;
+    }
+    realClick(vybrátBtn);
+    console.log('✅ Vybrat');
+    await sleep(1000);
+
+    // 2. Označ všechny komentáře
+    const cards = [...document.querySelectorAll('div[role="button"]')]
+      .filter(el => {
+        const lbl = el.getAttribute('aria-label') || '';
+        const txt = el.innerText?.trim() || '';
+        return lbl.startsWith('Obrázek') || lbl.startsWith('Video') || lbl.startsWith('Reel')
+          || (txt.includes('themartinfilip') && txt.length > 5);
+      });
+
+    if (!cards.length) {
+      console.log('📭 Žádné karty – čekám 30s...');
+      await countdown(30);
+      continue;
+    }
+
+    for (const card of cards) { realClick(card); await sleep(80); }
+    console.log(`🔲 Vybráno ${cards.length} komentářů`);
+    await sleep(800);
+
+    // 3. Klikni na SPAN "Odstranit" v liště
+    const deleteSpan = findSpan('Odstranit') || findAny('Odstranit');
+    if (!deleteSpan) {
+      console.warn('⚠️ Tlačítko Odstranit nenalezeno – zkouším znovu za 5s');
+      await sleep(5000);
+      continue;
+    }
+    realClick(deleteSpan);
+    console.log('🗑️ Kliknuto na "Odstranit"');
+    await sleep(1500);
+
+    // 4. Potvrzení – BUTTON "Odstranit" v dialogu
+    const confirmBtn = findButton('Odstranit');
+    if (confirmBtn) {
+      realClick(confirmBtn);
+      console.log('✅ Potvrzeno v dialogu');
+      await sleep(2000);
+    } else {
+      console.warn('⚠️ Potvrzovací button nenalezen');
+    }
+
+    totalCount += cards.length;
+    console.log(`🗑️ Kolo #${round} hotovo. Celkem: ${totalCount}`);
+
+    await countdown(30);
+
+    window.scrollBy(0, 600);
+    await sleep(1000);
+  }
+
+  console.log(`\n🏁 Hotovo. Celkem smazáno: ${totalCount} komentářů ve ${round} kolech`);
+})();
