@@ -52,7 +52,7 @@ window.stopDelete = false;
         const lbl = el.getAttribute('aria-label') || '';
         const txt = el.innerText?.trim() || '';
         return lbl.startsWith('Obrázek') || lbl.startsWith('Video') || lbl.startsWith('Reel')
-          || (txt.includes('themartinfilip') && txt.length > 5);
+          || (txt.includes('YOUR_USERNAME') && txt.length > 5);
       });
 
     if (!cards.length) {
